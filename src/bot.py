@@ -1,6 +1,8 @@
 import os
 import sys
 import asyncio
+from fastapi import FastAPI
+from uvicorn import Server, Config
 from dotenv import load_dotenv
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -14,6 +16,9 @@ from test_data import TEST
 # Добавляем путь к src в PYTHONPATH
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
+
+app = FastAPI()
+bot_app = Application.builder().token(TOKEN).build()
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 RAILWAY_PUBLIC_URL = os.getenv('RAILWAY_STATIC_URL', os.getenv('RAILWAY_PUBLIC_URL'))
@@ -290,6 +295,26 @@ async def setup_webhook(application):
         drop_pending_updates=True
     )    
 
+@app.post("/webhook")
+async def webhook(update: Update):
+    await bot_app.update_queue.put(update)
+    return {"status": "ok"}
+
+async def setup():
+    await bot_app.initialize()
+    await bot_app.bot.set_webhook(
+        url=WEBHOOK_URL,
+        drop_pending_updates=True
+    )
+    print(f"Webhook установлен на {WEBHOOK_URL}")
+
+    server = Server(Config(
+        app=app,
+        host="0.0.0.0",
+        port=int(os.getenv('PORT', 8000))
+    )
+    await server.serve()
+    
 def main():
     application = Application.builder().token("7724050180:AAFI_yWUzKQDz_Kzygkle-MuAy5Z8jQ3rrE").build()
 
@@ -311,8 +336,8 @@ def main():
         # Локальный режим
         application.run_polling()
     
-
-
 if __name__ == '__main__':
-    main()
+    import asyncio
+    bot_app.add_handler(CommandHandler("start", start))
+    asyncio.run(setup())
 
