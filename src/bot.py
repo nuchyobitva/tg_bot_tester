@@ -9,8 +9,6 @@ from telegram.constants import ParseMode
 import random
 from datetime import datetime, timedelta
 from test_data import TEST
-import os
-import sys
 
 # Добавляем путь к src в PYTHONPATH
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -18,7 +16,7 @@ load_dotenv()
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 RAILWAY_PUBLIC_URL = os.getenv('RAILWAY_STATIC_URL', os.getenv('RAILWAY_PUBLIC_URL'))
-
+WEBHOOK_URL = os.getenv('RAILWAY_PUBLIC_URL') + '/webhook' if 'RAILWAY_PUBLIC_URL' in os.environ else None
 # Настройка логирования
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -94,7 +92,7 @@ async def delete_previous_messages(update: Update, context: ContextTypes.DEFAULT
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("По просьбе Алексея Александровича направляю вам ссылку на опрос и прошу пройти до прохождения теста\nhttps://docs.google.com/forms/d/1lcuiOglXuiSXYhlklAs2dKgpUexJATvvlAMjP89fC-Y/viewform?edit_requested=true")
+    await update.message.reply_text("По просьбе Алексея Александровича направляю вам ссылку на опрос и прошу пройти до прохождения теста\nhttps://docs.google.com/forms/d/1lcuiOglXuiSXYhlklAs2dKgpUexJATvvlAMjP89fC-Y/viewform?edit_requested=true",parse_mode=ParseMode.HTML)
 
     user_id = update.message.from_user.id
 
@@ -292,23 +290,25 @@ def main():
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     application.add_handler(CallbackQueryHandler(button_handler))  # Добавляем обработчик кнопок
-    if RAILWAY_PUBLIC_URL:
-        # Режим работы на Railway
+    if WEBHOOK_URL:
+        # Настройка для Railway
         PORT = int(os.getenv('PORT', 8000))
-        WEBHOOK_URL = f"{RAILWAY_PUBLIC_URL}/webhook"
         
-        async def set_webhook():
+        # Установка webhook отдельно
+        async def post_init(application):
             await application.bot.set_webhook(
                 url=WEBHOOK_URL,
-                drop_pending_updates=True
+                drop_pending_updates=True,
+                allowed_updates=['message', 'callback_query']
             )
+            print(f"Webhook установлен на {WEBHOOK_URL}")
         
         application.run_webhook(
             listen="0.0.0.0",
             port=PORT,
             webhook_url=WEBHOOK_URL,
             secret_token=TOKEN,
-            set_webhook=set_webhook()
+            post_init=post_init
         )
     else:
         # Локальный режим
