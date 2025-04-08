@@ -1,5 +1,6 @@
 import os
 import sys
+import asyncio
 from dotenv import load_dotenv
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -283,6 +284,11 @@ async def finish_test(update: Update, context: ContextTypes.DEFAULT_TYPE, sessio
         if session.user_id in user_sessions:
             del user_sessions[session.user_id]
 
+async def setup_webhook(application):
+    await application.bot.set_webhook(
+        url=WEBHOOK_URL,
+        drop_pending_updates=True
+    )    
 
 def main():
     application = Application.builder().token("7724050180:AAFI_yWUzKQDz_Kzygkle-MuAy5Z8jQ3rrE").build()
@@ -293,23 +299,14 @@ def main():
     if WEBHOOK_URL:
         # Настройка для Railway
         PORT = int(os.getenv('PORT', 8000))
-        
-        # Установка webhook отдельно
-        async def post_init(application):
-            await application.bot.set_webhook(
-                url=WEBHOOK_URL,
-                drop_pending_updates=True,
-                allowed_updates=['message', 'callback_query']
-            )
-            print(f"Webhook установлен на {WEBHOOK_URL}")
-        
+               
         application.run_webhook(
             listen="0.0.0.0",
             port=PORT,
             webhook_url=WEBHOOK_URL,
             secret_token=TOKEN,
-            post_init=post_init
         )
+        asyncio.get_event_loop().run_until_complete(setup_webhook(application))
     else:
         # Локальный режим
         application.run_polling()
