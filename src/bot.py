@@ -1,4 +1,5 @@
 import os
+import sys
 from dotenv import load_dotenv
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
@@ -8,7 +9,11 @@ from telegram.constants import ParseMode
 import random
 from datetime import datetime, timedelta
 from test_data import TEST
+import os
+import sys
 
+# Добавляем путь к src в PYTHONPATH
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
