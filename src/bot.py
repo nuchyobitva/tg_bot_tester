@@ -18,9 +18,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 load_dotenv()
 
 app = FastAPI()
+TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 bot_app = Application.builder().token(TOKEN).build()
 
-TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
+
 RAILWAY_PUBLIC_URL = os.getenv('RAILWAY_STATIC_URL', os.getenv('RAILWAY_PUBLIC_URL'))
 WEBHOOK_URL = os.getenv('RAILWAY_PUBLIC_URL') + '/webhook' if 'RAILWAY_PUBLIC_URL' in os.environ else None
 # Настройка логирования
@@ -29,8 +30,7 @@ logging.basicConfig(
     level=logging.INFO
 )
 
-# Конфигурация теста
-ADMIN_CHAT_ID = 705993924  # Замените на ваш chat_id (можно узнать у @userinfobot)
+ADMIN_CHAT_ID = TOKEN = os.getenv('ADMIN_CHAT_ID')  # Замените на ваш chat_id (можно узнать у @userinfobot)
 
 # Глобальные переменные
 user_sessions = {}
@@ -316,7 +316,7 @@ async def setup():
     await server.serve()
     
 def main():
-    application = Application.builder().token("7724050180:AAFI_yWUzKQDz_Kzygkle-MuAy5Z8jQ3rrE").build()
+    application = Application.builder().token(TOKEN).build()
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
